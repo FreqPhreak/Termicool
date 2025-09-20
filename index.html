@@ -162,23 +162,27 @@ Fork me on GitHub!`,
 Followers: [TBD]
 Following: [TBD]
 Star my repos for good karma!`,
-            'banner': `<pre> _______                ______  _                       _     
+            'banner': `<pre> 
+ _______                ______  _                       _     
 (_______)              (_____ \| |                     | |    
  _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
 |  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
 | |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
 |_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
-                     |_|                                      </pre>`,
+                     |_|                                      
+                     </pre>`,
             'myip': async () => {
                 const ip = await getIPAddress();
                 return `Your IP address is: ${ip}`;
             },
-            'moo': `<pre> (__/)
-  (oo)
+            'moo': `<pre>
+   (__/)
+   (oo)
   /------/
   ||    ||
   ||----||
-Have you mooed today?</pre>`,
+Have you mooed today?
+</pre>`,
             'rm': `Why did the Linux user run 'rm -rf'? To delete his problems... and his files!`
         };
 
@@ -276,13 +280,15 @@ Have you mooed today?</pre>`,
             promptDiv.className = 'prompt';
             promptDiv.innerHTML = `<span class="prompt-text" id="promptText"></span><input type="text" class="command-input" id="commandInput" autofocus>`;
 
-            outputElement.innerHTML = `<div class="command-block"><pre class="ascii-art"> _______                ______  _                       _     
+            outputElement.innerHTML = `<div class="command-block"><pre class="ascii-art">
+ _______                ______  _                       _     
 (_______)              (_____ \| |                     | |    
  _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
 |  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
 | |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
 |_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
-                     |_|                                      </pre><div class="command-output">Welcome to FreqPhreak's GitHub Playground!<br>Type <span class="command-highlight">help</span> for available commands.</div></div>`;
+                     |_|                                      
+                     </pre><div class="command-output">Welcome to FreqPhreak's GitHub Playground!<br>Type <span class="command-highlight">help</span> for available commands.</div></div>`;
             outputElement.appendChild(promptDiv);
 
             const promptText = document.getElementById('promptText');
