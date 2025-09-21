@@ -8,20 +8,32 @@
     <style>
         html, body {
             margin: 0;
-            padding: 0; /* Remove default margins and padding */
-            height: 100vh; /* Ensure full viewport height */
-            width: 100%; /* Ensure full viewport width */
-            overflow: hidden; /* Prevent scrolling */
+            padding: 0;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
         }
 
         body {
-            background: #000000; /* Black background for entire page */
+            background: #000000;
             font-family: 'Ubuntu Mono', 'Courier New', monospace;
-            color: #00ff00; /* Green text */
+            color: #00ff00;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Ensure content starts at top */
+            align-items: flex-start;
             box-sizing: border-box;
+            position: relative;
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: -1;
         }
 
         .terminal {
@@ -29,14 +41,16 @@
             max-width: 800px;
             padding: 20px;
             margin: 0;
-            background: transparent; /* Remove grey box */
+            background: transparent;
+            position: relative;
+            z-index: 1;
         }
 
         .ascii-art {
             font-size: 10px;
             line-height: 1;
             white-space: pre;
-            margin: 0 0 20px 0; /* No top margin, only bottom */
+            margin: 0 0 20px 0;
             animation: greenBlueWhiteFade 8s infinite ease-in-out;
         }
 
@@ -52,11 +66,11 @@
             min-height: 300px;
             max-height: 70vh;
             overflow-y: auto;
-            color: #ffffff; /* White for output text */
+            color: #ffffff;
             font-size: 14px;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Align content at top */
+            justify-content: flex-start;
         }
 
         .command-block {
@@ -64,16 +78,16 @@
         }
 
         .command-text {
-            color: #ffc107; /* Amber for command prompt */
+            color: #ffc107;
         }
 
         .command-output {
-            color: #ffffff; /* White for output */
+            color: #ffffff;
         }
 
         .command-highlight {
-            color: #00ffff; /* Cyan for highlighted commands */
-            text-shadow: 0 0 5px #00ffff; /* Glowing effect */
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
         }
 
         .boot-message {
@@ -81,17 +95,17 @@
         }
 
         .boot-ok {
-            color: #00ff00; /* Green for [OK] */
+            color: #00ff00;
         }
 
         .boot-error {
-            color: #ff00ff; /* Magenta for [ERROR] */
+            color: #ff00ff;
         }
 
         .progress-bar {
-            color: #00ff00; /* Green for progress bar */
+            color: #00ff00;
             display: inline-block;
-            width: 20px; /* Fixed width for alignment */
+            width: 20px;
         }
 
         .prompt {
@@ -101,19 +115,34 @@
         }
 
         .prompt-text {
-            color: #ffc107; /* Amber for prompt */
+            color: #ffc107;
             margin-right: 5px;
         }
 
         .command-input {
             background: transparent;
             border: none;
-            color: #00ff00; /* Green for input */
+            color: #00ff00;
             font-family: inherit;
             font-size: 14px;
             outline: none;
             flex-grow: 1;
             caret-color: #ffffff;
+            position: relative;
+        }
+
+        .command-input::after {
+            content: '_';
+            color: #00ff00;
+            animation: blink 1s step-end infinite;
+            position: absolute;
+            right: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
         }
 
         /* Responsive adjustments */
@@ -131,6 +160,7 @@
     </style>
 </head>
 <body>
+    <canvas class="matrix-rain"></canvas>
     <div class="terminal">
         <div class="output" id="output">
             <div class="boot-message">Booting FreqPhreak's GitHub Playground...</div>
@@ -139,6 +169,55 @@
 
     <script>
         const outputElement = document.getElementById('output');
+
+        // Define ASCII logo as a variable for easy editing
+        const asciiLogo = `
+ _______                ______  _                       _     
+(_______)              (_____ \| |                     | |    
+ _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
+|  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
+| |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
+|_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
+                     |_|                                      
+                    `;
+
+        // Matrix rain effect
+        const canvas = document.querySelector('.matrix-rain');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '01';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(draw, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
 
         // Available commands and their outputs
         const commands = {
@@ -154,22 +233,15 @@
 Type a command and press Enter.`,
             'whoami': `I am FreqPhreak, a coder exploring GitHub's vast universe. Check my commits for the latest hacks!`,
             'repos': `Repositories:
-  - <a href="https://github.com/FreqPhreak/cool-projects" target="_blank">freqphreak/cool-projects</a>
-  - <a href="https://github.com/FreqPhreak/code-vibes" target="_blank">freqphreak/code-vibes</a>
-  - <a href="https://github.com/FreqPhreak/git-experiments" target="_blank">freqphreak/git-experiments</a>
+  - <a href="https://github.com/FreqPhreak/FreqPhreak.github.io" target="_blank">FreqPhreak/FreqPhreak.github.io</a>
+  - <a href="https://github.com/FreqPhreak/Auto-GPT" target="_blank">FreqPhreak/Auto-GPT</a>
+  - <a href="https://github.com/FreqPhreak/Flipper-Zero-BadUSB" target="_blank">FreqPhreak/Flipper-Zero-BadUSB</a>
 Fork me on GitHub!`,
             'profile': `GitHub: <a href="https://github.com/FreqPhreak" target="_blank">https://github.com/FreqPhreak</a>
 Followers: [TBD]
 Following: [TBD]
 Star my repos for good karma!`,
-            'banner': `<pre>
- _______                ______  _                       _     
-(_______)              (_____ \| |                     | |    
- _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
-|  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
-| |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
-|_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
-                       |_|</pre>`,
+            'banner': `<pre class="ascii-art">${asciiLogo}</pre>`,
             'myip': async () => {
                 const ip = await getIPAddress();
                 return `Your IP address is: ${ip}`;
@@ -185,7 +257,7 @@ Have you mooed today?
             'rm': `Why did the Linux user run 'rm -rf'? To delete his problems... and his files!`
         };
 
-        // Shortened boot sequence messages with GitHub and coding vibes
+        // boot sequence messages
         const bootMessages = [
             'Booting... Forking reality! <span class="boot-ok">[OK]</span>',
             'Loading... Commit vibes ON <span class="boot-ok">[OK]</span>',
@@ -279,15 +351,7 @@ Have you mooed today?
             promptDiv.className = 'prompt';
             promptDiv.innerHTML = `<span class="prompt-text" id="promptText"></span><input type="text" class="command-input" id="commandInput" autofocus>`;
 
-            outputElement.innerHTML = `<div class="command-block"><pre class="ascii-art">
- _______                ______  _                       _     
-(_______)              (_____ \| |                     | |    
- _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
-|  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
-| |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
-|_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
-                     |_|                                      
-                     </pre><div class="command-output">Welcome to FreqPhreak's GitHub Playground!<br>Type <span class="command-highlight">help</span> for available commands.</div></div>`;
+            outputElement.innerHTML = `<div class="command-block"><pre class="ascii-art">${asciiLogo}</pre><div class="command-output">Welcome to FreqPhreak's GitHub Playground!<br>Type <span class="command-highlight">help</span> for available commands.</div></div>`;
             outputElement.appendChild(promptDiv);
 
             const promptText = document.getElementById('promptText');
