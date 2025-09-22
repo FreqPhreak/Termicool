@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreqPhreak's GitHub Playground</title>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/powerglitch@latest/dist/powerglitch.min.js"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: #000000; /* Solid black base */
+            font-family: 'Ubuntu Mono', 'Courier New', monospace;
+            color: #00ff00;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            box-sizing: border-box;
+            position: relative;
+            min-height: 100vh; /* Ensure full height */
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.2; /* Adjusted for visibility without distraction */
+            z-index: -1; /* Behind terminal */
+        }
+
+        .terminal {
+            width: 100%; /* Full screen width */
+            height: 100vh; /* Full screen height */
+            padding: 20px;
+            margin: 0; /* Remove any margin to eliminate borders */
+            background: rgba(0, 0, 0, 0.7); /* Slightly transparent black */
+            position: relative;
+            z-index: 1; /* Above matrix */
+            box-sizing: border-box; /* Include padding in height/width */
+        }
+
+        .ascii-art {
+            font-size: 10px;
+            line-height: 1;
+            white-space: pre-wrap;
+            margin: 0 0 20px 0;
+            animation: greenBlueWhiteFade 8s infinite ease-in-out;
+            display: inline-block; /* Prevent clipping */
+            max-width: 100%; /* Ensure full visibility */
+        }
+
+        @keyframes greenBlueWhiteFade {
+            0% { color: #00ff00; text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+            25% { color: #00ccff; text-shadow: 0 0 15px #00ccff, 0 0 30px #00ccff; }
+            50% { color: #99ffff; text-shadow: 0 0 15px #99ffff, 0 0 30px #99ffff; }
+            75% { color: #ffffff; text-shadow: 0 0 15px #ffffff, 0 0 30px #ffffff; }
+            100% { color: #00ff00; text-shadow: 0 0 15px #00ff00, 0 0 30px #00ff00; }
+        }
+
+        .glitch {
+            position: relative;
+            display: inline-block;
+            overflow: visible; /* Prevent clipping during glitch */
+        }
+
+        .output {
+            min-height: 300px;
+            max-height: 70vh;
+            overflow-y: auto;
+            color: #ffffff;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .command-block {
+            margin-bottom: 10px;
+        }
+
+        .command-text {
+            color: #ffc107;
+        }
+
+        .command-output {
+            color: #ffffff;
+            white-space: pre-wrap;
+        }
+
+        .command-highlight {
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        .boot-message {
+            color: #ffffff;
+        }
+
+        .boot-ok {
+            color: #00ff00;
+        }
+
+        .boot-error {
+            color: #ff00ff;
+        }
+
+        .progress-bar {
+            color: #00ff00;
+            display: inline-block;
+            width: 20px;
+        }
+
+        .prompt {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .prompt-text {
+            color: #ffc107;
+            margin-right: 5px;
+        }
+
+        .command-input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            flex-grow: 1;
+            caret-color: #ffffff;
+            position: relative;
+        }
+
+        .command-input::after {
+            content: '_';
+            color: #00ff00;
+            animation: blink 1s step-end infinite;
+            position: absolute;
+            right: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .terminal {
+                padding: 10px;
+            }
+            .ascii-art {
+                font-size: 8px;
+            }
+            .output, .command-input {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas class="matrix-rain"></canvas>
+    <div class="terminal">
+        <div class="output" id="output">
+            <div class="boot-message">Booting FreqPhreak's GitHub Playground...</div>
+        </div>
+    </div>
+
+    <script>
+        const outputElement = document.getElementById('output');
+
+        // Define ASCII logo as a variable for easy editing
+        const asciiLogo = `
+ _______                ______  _                       _     
+(_______)              (_____ \| |                     | |    
+ _____ ____ _____  ____ _____) ) |__   ____ _____ _____| |  _ 
+|  ___) ___) ___ |/ _  |  ____/|  _ \ / ___) ___ (____ | |_/ )
+| |  | |   | ____| |_| | |     | | | | |   | ____/ ___ |  _ ( 
+|_|  |_|   |_____)\__  |_|     |_| |_|_|   |_____)_____|_| \_)
+                     |_|                                      
+                    `;
+
+        // Matrix rain effect
+        const canvas = document.querySelector('.matrix-rain');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const chars = '01';
+        const fontSize = 16;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(draw, 33);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Available commands and their outputs
+        const commands = {
+            'help': `Available commands:
+  <span class="command-highlight">whoami</span>    - About FreqPhreak
+  <span class="command-highlight">repos</span>     - List repositories
+  <span class="command-highlight">profile</span>   - View GitHub profile
+  <span class="command-highlight">banner</span>    - Show ASCII banner
+  <span class="command-highlight">clear</span>     - Clear the terminal
+  <span class="command-highlight">myip</span>      - Show your IP address
+  <span class="command-highlight">moo</span>       - Moo like apt-get
+  <span class="command-highlight">rm</span>        - A Linux rm joke
+  <span class="command-highlight">telnet</span>    - Simulate telnet to telehack.com Star Wars
+Type a command and press Enter.`,
+            'whoami': `I am FreqPhreak, a coder exploring GitHub's vast universe. Check my commits for the latest hacks!`,
+            'repos': `Repositories:
+  - <a href="https://github.com/FreqPhreak/FreqPhreak.github.io" target="_blank">FreqPhreak/FreqPhreak.github.io</a>
+  - <a href="https://github.com/FreqPhreak/Auto-GPT" target="_blank">FreqPhreak/Auto-GPT</a>
+  - <a href="https://github.com/FreqPhreak/Flipper-Zero-BadUSB" target="_blank">FreqPhreak/Flipper-Zero-BadUSB</a>
+Fork me on GitHub!`,
+            'profile': `GitHub: <a href="https://github.com/FreqPhreak" target="_blank">https://github.com/FreqPhreak</a>
+Followers: [TBD]
+Following: [TBD]
+Star my repos for good karma!`,
+            'banner': `<div class="ascii-art glitch">${asciiLogo}</div>`,
+            'myip': async () => {
+                const ip = await getIPAddress();
+                return `Your IP address is: ${ip}`;
+            },
+            'moo': `<div>
+   (__/)
+   (oo)
+  /------/
+  ||    ||
+  ||----||
+Have you mooed today?
+</div>`,
+            'rm': `Why did the Linux user run 'rm -rf'? To delete his problems... and his files!`,
+            'telnet': `<div>Trying 198.30.6.10...
+Connected to telehack.com.
+Escape character is '^]'.
+
+TELEHACK - Public Access UNIX
+login: guest
+Password: <guest>
+Last login: Mon Sep 22 18:16:00 2025 from [Your IP]
+$ swars
+Star Wars ASCII Adventure - Episode IV
+A long time ago, in a terminal far, far away....
+
+   /|
+  / | ________________
+  \|/ /  *** STAR WARS ***  \
+   |/__________________/
+   |  =================  | 
+   |  )                 (  | 
+   |_____________________|
+   |  =================  | 
+   |  )      ***      (  | 
+   |_____________________|
+
+May the Force be with you. Type 'exit' to disconnect.</div>`
+        };
+
+        // boot sequence messages
+        const bootMessages = [
+            'Booting... Forking reality! <span class="boot-ok">[OK]</span>',
+            'Loading... Commit vibes ON <span class="boot-ok">[OK]</span>',
+            'Cloning... Code push failed <span class="boot-ok">[OK]</span>',
+            'Chill mode... Git flow <span class="boot-ok">[OK]</span>',
+            'Syncing... Pull request FTW <span class="boot-ok">[OK]</span>',
+            'Branching... Vibe check <span class="boot-ok">[OK]</span>',
+            'Compiling... Ninja merge <span class="boot-ok">[OK]</span>',
+            'Pinging... Git chill <span class="boot-ok">[OK]</span>',
+            'Issues ON... Fix later <span class="boot-ok">[OK]</span>',
+            'Ready! Code with FreqPhreak <span class="boot-ok">[OK]</span>'
+        ];
+
+        // Progress bar characters
+        const progressChars = ['/', '-', '|', '\\'];
+
+        // Detect browser from userAgent
+        function getBrowser() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+            if (ua.includes('Edg')) return 'Edge';
+            if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+            return 'Unknown';
+        }
+
+        // Fetch IP address
+        async function getIPAddress() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                return data.ip || '127.0.0.1';
+            } catch (error) {
+                console.error('Failed to fetch IP:', error);
+                return '127.0.0.1';
+            }
+        }
+
+        // Update prompt with browser and IP
+        async function updatePrompt() {
+            const browser = getBrowser();
+            const ip = await getIPAddress();
+            return `${browser}@${ip}:~$`;
+        }
+
+        // Animate progress bar
+        function animateProgressBar(progressElement) {
+            const index = (parseInt(progressElement.dataset.index || '0') + 1) % progressChars.length;
+            progressElement.textContent = `[${progressChars[index]}]`;
+            progressElement.dataset.index = index;
+        }
+
+        // Boot sequence animation
+        async function bootSequence() {
+            outputElement.innerHTML = ''; // Clear initial message
+
+            // Create progress bar element
+            const progressDiv = document.createElement('div');
+            progressDiv.className = 'boot-message';
+            progressDiv.innerHTML = 'Loading system... <span class="progress-bar" data-index="0">[ ]</span>';
+            outputElement.appendChild(progressDiv);
+            const progressElement = progressDiv.querySelector('.progress-bar');
+
+            // Start progress bar animation
+            const progressInterval = setInterval(() => {
+                animateProgressBar(progressElement);
+            }, 100); // Update every 100ms
+
+            // Display boot messages
+            for (let i = 0; i < bootMessages.length; i++) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'boot-message';
+                messageDiv.innerHTML = bootMessages[i];
+                outputElement.insertBefore(messageDiv, progressDiv);
+                outputElement.scrollTop = outputElement.scrollHeight;
+                await new Promise(resolve => setTimeout(resolve, 400)); // 400ms delay per message
+            }
+
+            // Stop progress bar and clear output
+            clearInterval(progressInterval);
+            outputElement.innerHTML = '';
+
+            // Show final content
+            setupInitialState();
+        }
+
+        // Setup initial state
+        async function setupInitialState() {
+            const logoDiv = document.createElement('div');
+            logoDiv.className = 'command-block';
+            logoDiv.innerHTML = `<div class="ascii-art glitch">${asciiLogo}</div><div class="command-output">Welcome to FreqPhreak's GitHub Playground!<br>Type <span class="command-highlight">help</span> for available commands.</div>`;
+
+            const promptDiv = document.createElement('div');
+            promptDiv.className = 'prompt';
+            promptDiv.innerHTML = `<span class="prompt-text" id="promptText"></span><input type="text" class="command-input" id="commandInput" autofocus>`;
+
+            outputElement.appendChild(logoDiv);
+            outputElement.appendChild(promptDiv);
+
+            // Apply PowerGlitch effect with static random duration
+            const randomDuration = 800 + Math.random() * 400;
+            const randomStart = Math.random() * 0.3;
+            const randomEnd = 0.7 + Math.random() * 0.3;
+            const randomVelocity = 10 + Math.random() * 10;
+            const randomAmplitude = 1 + Math.random() * 2;
+            const randomSliceCount = Math.floor(4 + Math.random() * 6);
+            const randomSliceVelocity = 10 + Math.random() * 10;
+
+            PowerGlitch.glitch('.glitch', {
+                playMode: 'always',
+                createContainers: true,
+                hideOverflow: false,
+                timing: {
+                    duration: randomDuration,
+                    iterations: Infinity
+                },
+                glitchTimeSpan: {
+                    start: randomStart,
+                    end: randomEnd
+                },
+                shake: {
+                    velocity: randomVelocity,
+                    amplitude: randomAmplitude
+                },
+                slice: {
+                    count: randomSliceCount,
+                    velocity: randomSliceVelocity,
+                    minHeight: 0.02,
+                    maxHeight: 0.15,
+                    hueRotate: true
+                },
+                pulse: false
+            });
+
+            const promptText = document.getElementById('promptText');
+            promptText.textContent = await updatePrompt();
+            const commandInput = document.getElementById('commandInput');
+            setTimeout(() => commandInput.focus(), 100);
+
+            commandInput.addEventListener('keydown', async (event) => {
+                if (event.key === 'Enter') {
+                    const input = commandInput.value.trim().toLowerCase();
+                    let response = '';
+
+                    if (input === '') {
+                        response = '';
+                    } else if (input === 'clear') {
+                        setupInitialState();
+                        return;
+                    } else {
+                        const command = commands[input];
+                        if (typeof command === 'function') {
+                            response = await command();
+                        } else if (command) {
+                            response = command;
+                        } else {
+                            response = `Command not found: ${input}<br>Type <span class="command-highlight">help</span> for available commands.`;
+                        }
+                    }
+
+                    const commandBlock = document.createElement('div');
+                    commandBlock.className = 'command-block';
+                    commandBlock.innerHTML = `<span class="command-text">${promptText.textContent} ${input}</span><br><span class="command-output">${response}</span>`;
+                    outputElement.insertBefore(commandBlock, promptDiv);
+                    commandInput.value = '';
+                    outputElement.scrollTop = outputElement.scrollHeight;
+
+                    // Reapply glitch effect after each command if the banner is redisplayed
+                    if (input === 'banner') {
+                        const bannerElements = outputElement.querySelectorAll('.glitch');
+                        bannerElements.forEach(element => {
+                            const newRandomDuration = 800 + Math.random() * 400;
+                            const newRandomStart = Math.random() * 0.3;
+                            const newRandomEnd = 0.7 + Math.random() * 0.3;
+                            const newRandomVelocity = 10 + Math.random() * 10;
+                            const newRandomAmplitude = 1 + Math.random() * 2;
+                            const newRandomSliceCount = Math.floor(4 + Math.random() * 6);
+                            const newRandomSliceVelocity = 10 + Math.random() * 10;
+
+                            PowerGlitch.glitch(element, {
+                                playMode: 'always',
+                                createContainers: true,
+                                hideOverflow: false,
+                                timing: {
+                                    duration: newRandomDuration,
+                                    iterations: Infinity
+                                },
+                                glitchTimeSpan: {
+                                    start: newRandomStart,
+                                    end: newRandomEnd
+                                },
+                                shake: {
+                                    velocity: newRandomVelocity,
+                                    amplitude: newRandomAmplitude
+                                },
+                                slice: {
+                                    count: newRandomSliceCount,
+                                    velocity: newRandomSliceVelocity,
+                                    minHeight: 0.02,
+                                    maxHeight: 0.15,
+                                    hueRotate: true
+                                },
+                                pulse: false
+                            });
+                        });
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('load', () => {
+            bootSequence();
+        });
+    </script>
+</body>
+</html>
