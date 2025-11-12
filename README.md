@@ -1,1 +1,1 @@
-crappy vibe coded terminal style webpage
+crappy terminal style webpage
