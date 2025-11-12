@@ -1,1 +1,1 @@
-crappy terminal style webpage
+ terminal style webpage
